@@ -1,0 +1,25 @@
+Diob
+	Leg
+		atlasName = "icons"
+		anchor = {"x": 0, "y": 0.5}
+		var parent = null
+		var child = null
+		var ikLeg = null
+
+		function followPoint(pX, pY)
+			this.angle = Math.atan2(this.xPos-pX, this.yPos-pY)+Util.toRadians(90)
+			this.setPos(pX-(Math.cos(this.angle)*this.width), pY-(Math.sin(-this.angle)*this.width))
+			if (this.attachment)
+				if (this.ikLeg.isControlled)
+					this.attachment.setPos(this.xPos+(Math.cos(this.angle)*this.width)-16, this.yPos+(Math.sin(-this.angle)*this.width)-16)
+				else
+					this.attachment.isAttached = false
+					this.attachment = null
+          
+		function faceParent()
+			if (this.parent)
+				this.setPos(this.parent.xPos+(Math.cos(this.parent.angle)*this.parent.width), this.parent.yPos+(Math.sin(-this.parent.angle)*this.parent.width))
+		function faceChild()
+			if (this.child)
+				this.angle = Math.atan2(this.xPos-this.child.xPos, this.yPos-this.child.yPos)+Util.toRadians(90)
+				this.setPos(this.child.xPos-(Math.cos(this.angle)*this.width), this.child.yPos-(Math.sin(-this.angle)*this.width))
