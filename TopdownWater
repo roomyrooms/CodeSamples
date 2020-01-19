@@ -1,0 +1,53 @@
+Tile
+	density = 0
+	var waterContent = 0
+	var waterPressure = 0.1
+	var waterAllowance = 1
+	var waterSource = false
+	var waterOverlay = null
+	var updatedRecently = false
+	var nearbyTiles = {}
+	var nearbyWater = 0
+
+	var managerRate = 1
+
+	function managerExecute()
+		this.updateWater()
+	
+	function updateWater()
+		var totalWater = this.waterContent
+		foreach (var nearbyTile in this.nearbyTiles)
+			if (nearbyTile.density == 0)
+				totalWater += nearbyTile.waterContent// * nearbyTile.waterPressure
+		this.waterPressure = Math.clamp(Math.remap(totalWater, 0, (1000*4)+1000, 0.5, 0.8), 0, 1)
+
+		foreach (var nearbyTile in this.nearbyTiles)
+			if (nearbyTile.density == 0)
+				if (nearbyTile.waterContent < this.waterContent)
+					var waterDiff = (this.waterContent - nearbyTile.waterContent)
+					nearbyTile.waterContent += waterDiff * this.waterPressure * nearbyTile.waterAllowance
+					if (!this.waterSource)
+						this.waterContent -= waterDiff * this.waterPressure * nearbyTile.waterAllowance
+		var remappedWater = Math.remap(this.waterContent, 0, 1000, 0.2, 1)
+		this.waterOverlay.color = "rgb(" + "100," + "100," + 255*remappedWater + ")"
+		this.updatedRecently = true
+
+	onNew()
+		if (!this.density)
+			manager.addEvent(this)
+			this.waterOverlay = this.addOverlay("Overlay/Water")
+			this.waterOverlay.alpha = 1
+			foreach (var direction in ["east", "west", "south",  "north"])//, "northeast", "northwest", "southeast", "southwest"])
+				var selectedTile = Map.getLocByDir(this, direction)
+				if (!selectedTile.getContents().length > 0)
+					this.nearbyTiles[direction] = selectedTile
+
+	Generic
+		WaterTile
+			waterContent = 1000
+			waterSource = true
+	Obstacle
+		WaterGrate
+			waterAllowance = 0.3
+			density = 0
+			alpha = 0.5
