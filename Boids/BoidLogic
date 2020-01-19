@@ -1,0 +1,45 @@
+Movable
+	managerRate = 1
+	Boid
+		atlasName = "boidicons"
+		iconName = "boid"
+		var boidSpeed = 5
+		var dirAngle = 0
+		var boidColor = [0,0,0]
+
+		onNew()
+			this.dirAngle = Util.toRadians(Math.rand(-180,180))
+			this.angle = -this.dirAngle
+
+			this.boidColor = [150, 150, Math.rand(150,255)]
+			this.color = "rgb(" + this.boidColor[0] + "," + this.boidColor[1] + "," + this.boidColor[2] + ")"
+
+			manager.addEvent(this)
+
+		function managerExecute()
+			this.dirAngle = Math.angleTurn(this.dirAngle, Util.toRadians(180), Util.toRadians(Math.remap(Math.clamp((50*32) - this.xPos, 0, borderWidth), borderWidth, 0, 0, 50)))
+			this.dirAngle = Math.angleTurn(this.dirAngle, Util.toRadians(0), Util.toRadians(Math.remap(Math.clamp(this.xPos, 0, borderWidth), borderWidth, 0, 0, 50)))
+			this.dirAngle = Math.angleTurn(this.dirAngle, Util.toRadians(270), Util.toRadians(Math.remap(Math.clamp((30*32) - this.yPos, 0, borderWidth), borderWidth, 0, 0, 50)))
+			this.dirAngle = Math.angleTurn(this.dirAngle, Util.toRadians(90), Util.toRadians(Math.remap(Math.clamp(this.yPos, 0, borderWidth), borderWidth, 0, 0, 50)))
+
+			var totalViewed = 0
+			var avgHeading = 0
+			var avgPosition = [0,0]
+			for (var i = 0; i < manager.boids.length-1; i++)
+				var otherBoid = manager.boids[i]
+				var distToBoid = Math.getDistance(this.xPos, this.yPos, otherBoid.xPos, otherBoid.yPos)
+
+				if (distToBoid <= 64)
+					this.dirAngle = Math.angleTurn(this.dirAngle, Math.atan2(this.yPos - otherBoid.yPos, this.xPos - otherBoid.xPos), Util.toRadians(Math.remap(Math.clamp(distToBoid, 0, 64), 64, 0, 0, 1)))
+			
+				if (distToBoid <= 32)
+					avgHeading += otherBoid.dirAngle// * Math.remap(distToBoid, 64, 0, 0, 1)
+					avgPosition[0] += otherBoid.xPos// * Math.remap(distToBoid, 64, 0, 0.5, 1)
+					avgPosition[1] += otherBoid.yPos// * Math.remap(distToBoid, 64, 0, 0.5, 1)
+					totalViewed++
+
+			this.dirAngle = Math.angleTurn(this.dirAngle, avgHeading/totalViewed, Util.toRadians(5))
+			this.dirAngle = Math.angleTurn(this.dirAngle, Math.atan2(avgPosition[0]/totalViewed - this.yPos, avgPosition[1]/totalViewed - this.xPos), Util.toRadians(2))
+
+			this.setPos(this.xPos + Math.cos(this.dirAngle) * this.boidSpeed, this.yPos + Math.sin(this.dirAngle) * this.boidSpeed)
+			this.angle = -this.dirAngle
