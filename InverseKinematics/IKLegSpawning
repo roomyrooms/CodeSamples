@@ -1,0 +1,17 @@
+Mob
+	IKMob
+		atlasName = "icons"
+		iconName = "bodybig"
+		width = 64
+		height = 64
+		var ikLegs = []
+		var travelIndex = 0
+		onLogin()
+			for (var i = 0; i < World.getDiobs("Diob/LegSpawner").length; i++)
+				var legBox = World.getDiobs("Diob/LegSpawner")[i]
+				var ikLeg = new Object("IKLeg", 5, "Medium", [legBox.xPos, legBox.yPos-16])
+				this.ikLegs.push(ikLeg)
+			for (var i = 0; i < 10; i++)
+				var ikLeg = new Object("IKLeg", 8, "Medium", [250, 250])
+				ikLeg.parentObj = this
+				this.ikLegs.push(ikLeg)
