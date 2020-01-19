@@ -1,0 +1,104 @@
+IKLeg
+	var originPoint = [0,0]
+	var focusPoint = [0,0]
+	var toIterate = []
+	var parentObj = null
+
+	var isFollowing = false
+	var isTransitioning = false
+	var isTaut = false
+	var isControlled = false
+
+	var lastClosest = null
+	var focusThread = null
+	var upkeepThread = null
+
+	onNew(numLegs, legSize, originPoint)
+		this.originPoint = originPoint
+		for (var i = 1; i <= numLegs; i++)
+			var newLeg = new Diob("Diob/Leg/" + legSize)
+			newLeg.setPos(originPoint[0]+((i-1)*newLeg.width), originPoint[1], "map")
+			newLeg.ikLeg = this
+			this.toIterate.push(newLeg)
+		for (var x = 0; x < this.toIterate.length; x++)
+			if (x != 0)
+				this.toIterate[x].parent = this.toIterate[x-1]
+			if (x != this.toIterate.length-1)
+				this.toIterate[x].child = this.toIterate[x+1]
+
+		this.upkeepThread = thread(750)
+			if (!this.isControlled)
+				if (Math.rand(0,100) <= 30)
+					this.handleTrajs()
+
+	function updateOrigin(pX, pY)
+		this.originPoint = [pX, pY]
+	
+	function updateFocus(pX, pY)
+		this.focusPoint = [pX, pY]
+
+	function transitionFocus(pX, pY)
+		if (!this.isTransitioning)
+			this.isTransitioning = true
+			var newFocus = [pX, pY]
+			var oldFocus = [this.focusPoint[0], this.focusPoint[1]]
+			var focusDist = getDistance(oldFocus[0], oldFocus[1], pX, pY)
+			var lerpCntr = 0
+			this.focusThread = thread(20)
+				if (lerpCntr < 1)
+					if (this.isControlled)
+						lerpCntr += 20/Math.remap(focusDist, 0, 300, 50, 300)
+					else
+						lerpCntr += 20/Math.remap(focusDist, 0, 300, 500, 1000)
+				else if (lerpCntr >= 1 || (this.isTaut && lerpCntr > 0.3))
+					Event.interruptThread(this.focusThread)
+					this.isTransitioning = false
+					this.followFocus()
+				this.updateFocus(Math.lerp(oldFocus[0], newFocus[0], lerpCntr), Math.lerp(oldFocus[1], newFocus[1], lerpCntr))
+				this.followFocus()
+
+	function followFocus()
+		if (!this.isFollowing)
+			this.isFollowing = true
+			var pX = this.focusPoint[0]
+			var pY = this.focusPoint[1]
+
+			this.toIterate[this.toIterate.length-1].followPoint(pX, pY)
+			var nextParent = this.toIterate[this.toIterate.length-1].parent
+			while (nextParent != null)
+				nextParent.faceChild()
+				nextParent = nextParent.parent
+			
+			this.toIterate[0].setPos(this.originPoint[0], this.originPoint[1])
+			var nextChild = this.toIterate[0].child
+			while (nextChild != null)
+				nextChild.faceParent()
+				nextChild = nextChild.child
+			this.isFollowing = false
+		this.handleTaut(pX, pY)
+	
+	function handleTaut(pX, pY)
+		if (getDistance(this.toIterate[0].xPos, this.toIterate[1].yPos, pX, pY) > this.toIterate.length * this.toIterate[0].width)
+			this.isTaut = true
+			if (!this.isControlled)
+				this.handleTrajs()
+		else
+			this.isTaut = false
+
+	function handleTrajs()
+		if (this.parentObj)
+			var dirOffsets = {
+				"north": {"x": [-100,100], "y": [-130,-75]},
+				"south": {"x": [-100,100], "y": [75,130]},
+				"east": {"x": [75,130], "y": [-100,100]},
+				"west": {"x": [-130,-75], "y": [-100,100]}
+			}
+			var parentDir = this.parentObj.dir.slice(0,5)
+			var nearestObjects = Map.getRangeByType(this.parentObj, "Movable/Obstacle", false, 128, 128, true)
+			if (nearestObjects.length > 0)
+				var closestDistObj = Util.pick(nearestObjects)
+				this.transitionFocus(closestDistObj.xPos+8, closestDistObj.yPos)
+
+			else
+				var movementRange = [Math.rand(dirOffsets[parentDir]["x"][0],dirOffsets[parentDir]["x"][1]), Math.rand(dirOffsets[parentDir]["y"][0], dirOffsets[parentDir]["x"][1])]
+				this.transitionFocus(this.parentObj.xPos+movementRange[0]+32, this.parentObj.yPos+movementRange[1]+32)
