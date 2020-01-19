@@ -1,0 +1,72 @@
+var manager = new Object("GameManager")
+
+World
+	onNew()
+		manager.startLoop()
+
+		for (var i = 0; i < 100; i++)
+			var boid = new Diob("Movable/Boid")
+			boid.setPos(Math.rand(100,500), Math.rand(100,500), "map")
+			
+GameManager
+	var curTime = 0
+
+	var events = []
+	var eventRates = []
+	var toTick = []
+
+	var boids = []
+	var food = []
+
+	var centralLoop = 0
+
+
+	function addEvent(pE, rate)
+		if (!this.events.includes(pE))
+			this.events.push(pE) 
+			if (rate)
+				this.setEventTick(pE, rate)
+			else if (pE.managerRate)
+				this.setEventTick(pE, pE.managerRate)
+	function removeEvent(pE)
+		if (this.events.includes(pE))
+			this.removeEventTick(pE)
+			this.events.splice(this.events.indexOf(pE), 1)
+	function getEvents()
+		return this.events
+	
+	function setEventTick(pE, tickrate)
+		if (this.events.includes(pE))
+			this.eventRates[this.events.indexOf(pE)] = tickrate
+			this.toTick[this.events.indexOf(pE)] = 0
+	function removeEventTick(pE)
+		if (this.events.includes(pE))
+			this.eventRates.splice(this.events.indexOf(pE), 1)
+			this.toTick.splice(this.events.indexOf(pE), 1)
+	function getEventRates()
+		return this.eventRates
+	function getEventTicks()
+		return this.toTick
+
+
+	function startLoop()
+		this.centralLoop = thread(20)
+			this.curTime += 0.001/(1000/20)
+			var events = this.getEvents()
+			for (var i = events.length; i >= 0; i--)
+				var event = events[i]
+				if (!event)
+					this.removeEvent(event)
+				if (this.toTick[i] >= this.eventRates[i] && event)
+					event.managerExecute(this)
+					this.toTick[i] = 0
+				else
+					this.toTick[i]++
+		
+		
+Movable
+	Boid
+		onNew()
+			manager.boids.push(this)
+		onDel()
+			manager.boids.splice(manager.boids.indexOf(this))
