@@ -1,0 +1,38 @@
+#BEGIN CLIENTCODE
+Movable
+	Projectile
+		var lerpCntr = 0
+		
+		var oldPos = [0, 0]
+		var newPos = [0, 0]
+		
+		var isLerping = false
+
+		var attClient = 0
+		
+		onNew(posX, posY, mapName)
+			this.attClient = World.getClients()[0]
+			if (!this.attClient.clientEvents.includes(this))
+				this.attClient.addClientEvent(this, 1)
+				this.oldPos = [posX, posY]
+			
+		onDel()
+			this.attClient = World.getClients()[0]
+			this.attClient.removeClientEvent(this)
+		
+		onRelocated(pX, pY, pMap, pMove)
+			if (!this.isLerping)
+				this.oldPos = [pX, pY]
+				this.newPos = [this.xPos, this.yPos]
+					
+				this.lerpCntr = 0
+			
+		function clientExecute()
+			this.lerpCntr = Math.clamp(this.lerpCntr + 1 / (1000 / this.attClient.fpsDelay) * 5, 0, 1)
+			
+			this.isLerping = true
+			if (this.newPos[0] && this.oldPos[0])
+				this.xPos = Math.lerp(this.oldPos[0], this.newPos[0], this.lerpCntr)
+			if (this.newPos[1] && this.oldPos[1])
+				this.yPos = Math.lerp(this.oldPos[1], this.newPos[1], this.lerpCntr)
+			this.isLerping = false
